@@ -35,7 +35,6 @@ function ProfileRelationsBox(props) {
       </h2>
       <ul>
         {props.items.map((itemAtual) => {
-          
           return (
             <li key={itemAtual.id}>
               <a href={`https://github.com/${itemAtual.login}.png`}>
@@ -51,15 +50,10 @@ function ProfileRelationsBox(props) {
 }
 
 export default function Home() {
-  const [comunidades, setComunidades] = useState([
-    {
-      id: "21312321321",
-      title: "Eu odeio acordar cedo",
-      image: "https://alurakut.vercel.app/capa-comunidade-01.jpg",
-    },
-  ]);
+  const [comunidades, setComunidades] = useState([]);
   const [seguidores, setSeguidores] = useState([]);
   const [seguidoresFiltro, setSeguidoresFiltro] = useState([]);
+  const usuario = 'miltonabdon'
 
   const githubUser = "miltonabdon";
   const pessoasFavoritas = [
@@ -77,17 +71,27 @@ export default function Home() {
     const dadosDoForm = new FormData(event.target);
 
     const comunidade = {
-      id: new Date().toISOString,
       title: dadosDoForm.get("title"),
-      image: dadosDoForm.get("image"),
+      imageUrl: dadosDoForm.get("image"),
+      creatorSlug: usuario,
     };
+
+    fetch('/api/comunidades', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(comunidade)
+    }).then(async (res) => {
+      return await res.json()
+    })
 
     const comunidadesAtualizadas = [...comunidades, comunidade];
     setComunidades(comunidadesAtualizadas);
   }
 
   useEffect(() => {
-    fetch("https://api.github.com/users/jusdomingues/followers")
+    fetch("https://api.github.com/users/miltonabdon/followers")
       .then((respostaServer) => {
         return respostaServer.json();
       })
@@ -95,6 +99,32 @@ export default function Home() {
         setSeguidores(respostaCompleta);
 
         /*setSeguidoresFiltro(...seguidoresFiltro ,respostaCompleta[0])*/
+      });
+
+    // API GraphQL
+    fetch("https://graphql.datocms.com/", {
+      method: "POST",
+      headers: {
+        Authorization: "e3b3d846c119859a2016386ce6f5bc",
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        query: `query {
+          allCommunities {
+            title
+            imageUrl
+            creatorSlug
+          }
+        }`,
+      }),
+    })
+      .then((response) => {
+        return response.json();
+      })
+      .then((respostaCompleta) => {
+        const comunidadesDoDato = respostaCompleta.data.allCommunities;
+        setComunidades(comunidadesDoDato)
       });
   }, []);
 
@@ -143,8 +173,8 @@ export default function Home() {
               {comunidades.map((itemAtual) => {
                 return (
                   <li key={itemAtual.id}>
-                    <a href={`/users/${itemAtual.title}`}>
-                      {<img src={itemAtual.image} />}
+                    <a href={`/communities/${itemAtual.id}`}>
+                      {<img src={itemAtual.imageUrl} />}
                       <span>{itemAtual.title}</span>
                     </a>
                   </li>
